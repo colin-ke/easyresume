@@ -11,6 +11,7 @@
 					}
 				},
 
+				//update the editor json, then update resume json
 				updateStateJSON:function(json){
 					this.setState({json:json},function(){
 						this.updateResume(json);
@@ -35,9 +36,17 @@
 				//项目经历更改
 				handleProjectChange:function(projectIndex,projectJSON){
 					var json = this.getEditorJSON();
-					json.projectExperiences[projectIndex]= projectJSON;
+                    console.debug("before change project ,projectIndex = ",projectIndex,json);
+                    json.projectExperiences[projectIndex]= projectJSON;
 					this.updateStateJSON(json);
 				},
+
+                handleProjectDelete:function(projectIndex){
+                    var json = this.getEditorJSON();
+                    var newJSON = jQuery.extend(true,{},json)
+                    newJSON.projectExperiences.splice(projectIndex, 1);
+                    this.updateStateJSON(newJSON);
+                },
 
 				//教育经历更改
 				handleEducationChange:function(educationIndex,educationJSON){
@@ -46,45 +55,70 @@
 					this.updateStateJSON(json);
 				},
 
-				hanldeWorkInfoChange:function(workIndex,jsonKey,value){
-					var json = this.getEditorJSON();
-					json.workExperiences[workIndex][jsonKey] = value;
-					this.updateStateJSON(json);						
-				},
-
-				hanldeWorkDetailChange:function(workIndex,i,value){
-					//console.log('hanldeWorkDetailChange',workIndex,i,value);
-					var json = this.getEditorJSON();
-					json.workExperiences[workIndex]['details'][i] = value;
-					this.updateStateJSON(json);
-				},
-
+				//自定义模块update
 				handleSectionsChange: function(sectionIndex,sectionJSON){
 					var json = this.getEditorJSON();
-					json['sections'][sectionIndex] = sectionJSON;
+					if (sectionJSON == null){//删除
+                        console.debug("[handleSectionsChange][delete],",sectionIndex);
+                        json['sections'].splice(sectionIndex,1);
+                    }else {
+                        json['sections'][sectionIndex] = sectionJSON;
+                    }
 					this.updateStateJSON(json);
 				},
 
+
+                /*START : WORK*/
+                //工作的普通信息更新
+                hanldeWorkInfoChange:function(workIndex,jsonKey,value){
+                    var json = this.getEditorJSON();
+                    json.workExperiences[workIndex][jsonKey] = value;
+                    this.updateStateJSON(json);
+                },
+
+                //删除一段工作经历
+                handleWorkFragmentDelete:function(workIndex){
+                    var json = $.extend(true,{},this.getEditorJSON());
+                    json.workExperiences.splice(workIndex, 1);
+                    this.updateStateJSON(json);
+                },
+
+                //工作经历的details详情更新
+                handleWorkDetailChange:function(workIndex,i,value){
+                    var json = this.getEditorJSON();
+                    if (value==null) {//删除
+                        json.workExperiences[workIndex]['details'].splice(i,1);
+                        console.debug('[hanldeWorkDetailChange][delete]',workIndex,i,value,json);
+                    } else {
+                        json.workExperiences[workIndex]['details'][i] = value;
+                        console.debug('[hanldeWorkDetailChange][update]',workIndex,i,value,json);
+                    }
+                    this.updateStateJSON(json);
+                },
+                /*END : WORK*/
+
+
 				//o= jsonkey对应的对象，被merge过去更新resume
-				updateJSONAndPreview :function(o){
-					if(typeof o === "function"){//是函数，执行函数
-						var f = o;
-						f.apply(this,Array.prototype.slice.call(arguments,1));//函数调用，绑定到editor 的this
-					}
-					else{//传入的是对象
-						var json = $.extend(true,this.getEditorJSON(),o);
-						this.setState(json,function(){
-							ReactDOM.render(<div><Resume  json={json}/></div>,document.getElementById('container'))
-						});
-					}
-				},
+				// updateJSONAndPreview :function(o){
+				// 	if(typeof o === "function"){//是函数，执行函数
+				// 		var f = o;
+				// 		f.apply(this,Array.prototype.slice.call(arguments,1));//函数调用，绑定到editor 的this
+				// 	}
+				// 	else{//传入的是对象
+				// 		var json = $.extend(true,this.getEditorJSON(),o);
+				// 		this.setState(json,function(){
+				// 			ReactDOM.render(<div><Resume  json={json}/></div>,document.getElementById('container'))
+				// 		});
+				// 	}
+				// },
 
 				getEditorJSON:function(){
-					return this.state.json;
+					var clone = {};
+                    jQuery.extend(true,clone,this.state.json);
+					return clone;
 				},
 				
 				handleDownload:function(event){
-					console.log('handleDownload');
 					var json = this.getEditorJSON();
 
 					var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json,0,4));
@@ -100,20 +134,25 @@
 					a.remove();
 				},
 
+				//add one exeperience under one custom sections
+				handleAddCustomSection: function(sectionKey, event){
+					var state = this.state;
+					let emptySectionConfig = buildDefaultConfigJSON(sectionKey);
+					console.log('[handleAddCustomSection][emptySectionConfig]',emptySectionConfig);
+					state.json[sectionKey].push(emptySectionConfig);//增加一段模块
+					this.updateStateJSON(state.json)
+				},
 
 				componentDidMount:function(){
 				},
 
 				render:function(){
+				    console.log("rending editor, this.json = ",this.state.json);
 					var self = this;
-
-
 					return (
 							<div id="editor" ref="editor">
-
-
 								<div className="download">
-									<button onClick={this.handleDownload}>下载JSON配置</button>
+									<div id="downloadBtn" title="点击下载JSON配置到本地" onClick={this.handleDownload}></div>
 								</div>
 
 								{/*个人信息*/}
@@ -151,55 +190,87 @@
 									{
 										this.state.json.workExperiences.map(function(json,i){
 											
-											var onValueChange = function(workIndex){
+											let onValueChange = function(workIndex){
 												return function(jsonKey,value){
 														self.hanldeWorkInfoChange(workIndex,jsonKey,value)
 													}
 											}(i);
 
-											var onDetailChange = function(workIndex){
+											let onDetailChange = function(workIndex){
 												return function(i,value){
-														self.hanldeWorkDetailChange(workIndex,i,value)
+														self.handleWorkDetailChange(workIndex,i,value)
 													}
 											}(i);
 
+                                            let onWorkDelete = function(workIndex){
+                                                return function(workIndex) {
+                                                    self.handleWorkFragmentDelete(workIndex);
+                                                }
+                                            }(i);
 
-											return <WorkEditInput key={"work-"+i} index={i} jsonKey="workExperiences" editor={self} 
+
+											return <div className = "fragmentBlock" key={"work-"+i}>
+                                                        <WorkEditInput index={i} jsonKey="workExperiences" editor={self}
 														json={json}
 														onValueChange={onValueChange}
 														onDetailChange={onDetailChange}
 														/>
+                                                        <a href = "#" className="deleteFragment" title={"点击删除["+json.company+"]的工作经历"} onClick = {onWorkDelete}>delete</a>
+                                                    </div>
+
 										})
 									}
+
+									<a href="#" className="add-fragment" onClick={this.handleAddCustomSection.bind(self,"workExperiences")}>
+										添加一段工作经历
+									</a>
+
 								</div>
 
-
+								{/*项目经历*/}
 								<div id="editProjectExperiences" className="edit-section" jsonKey="projectExperiences">
 									<div className="header">项目经历</div>
 									{
 										this.state.json.projectExperiences.map(function(json,projectIndex){
 
-											var onProjectChange = function(projectIndex){
+											let onProjectChange = function(projectIndex){
 												return function(projectJSON){
 														return self.handleProjectChange(projectIndex,projectJSON);
 													}
-											}(projectIndex)
+											}(projectIndex);
 
-											return 	<ProjectEditInput 
-														key={"project-"+projectIndex} 
-														index={projectIndex}
-														json={json}
-														onProjectChange={onProjectChange}
-														/>
-													
-										})
-									}									
+                                            let onProjectDelete = function(projectIndex){
+                                                 return function () {
+                                                     self.handleProjectDelete(projectIndex)
+                                                 }
+                                            }(projectIndex);
+
+											return 	<div className = "fragmentBlock"  key={"project-"+projectIndex}>
+                                                        <ProjectEditInput
+                                                            index={projectIndex}
+                                                            json={json}
+                                                            onProjectChange={onProjectChange}
+														    />
+                                                        <a href = "#" className="deleteFragment" title={"点击删除项目["+json.projectName+"]"}onClick = {onProjectDelete}>delete</a>
+                                                    </div>
+
+                                            })
+									}
+									<a href="#" title="点击添加一个项目经历" className="add-fragment" onClick={this.handleAddCustomSection.bind(self,"projectExperiences")}>
+										添加一个项目
+									</a>									
 								</div>
 
-								<EditSections jsons={self.getEditorJSON().sections}
-									onSectionsChange={self.handleSectionsChange}/>
+								{/*自定义模块*/}
+								<div id="customSections" className="edit-section" jsonKey="sections">
+									<EditSections jsons={self.getEditorJSON().sections}
+										onSectionsChange={self.handleSectionsChange}/>
+									<a href="#" className="add" onClick={this.handleAddCustomSection.bind(self,"sections")}>
+										添加一段自定义模块
+									</a>	
+								</div>
 
-
+								{/*教育经历*/}
 								<div id="editEducationExperiences" className="edit-education" jsonKey="educations">
 									<div className="header">教育经历</div>
 									{
@@ -217,9 +288,12 @@
 														json={json}
 														onEducationChange={onEducationChange}/>
 										})
-									}									
-								</div>
+									}	
 
+									<a href="#" className="add" onClick={this.handleAddCustomSection.bind(self,"educations")}>
+										添加一段教育经历
+									</a>									
+								</div>
 
 							</div> 
 
@@ -227,3 +301,17 @@
 				}
 			}
 		);
+
+        //增加一个模块的时候，默认的配置
+		function buildDefaultConfigJSON(jsonKey) {
+			switch (jsonKey) {
+				case "workExperiences" :
+					return jQuery.extend(true,{},Work.emptyJSON,{"company":"新公司",details:["",""]});
+				case "projectExperiences":
+					return jQuery.extend(true,{},ProjectExperience.emptyJSON,{"projectName":"新项目",details:["",""]});
+				case "educations":
+					return jQuery.extend(true,{},Educations.emptyJSON,{"university":"新大学","experiences":[""]});
+				case "sections":
+					return jQuery.extend(true,{},Section.emptyJSON,{title:"新建模块",fragments:[Fragment.emptyJSON]});
+			}
+		}

@@ -22,9 +22,15 @@
 					this.props.onEducationChange(json);
 				},
 
+				//教育经历中所有数组输入框变化的事件回调
 				handleArrayChange:function(jsonKey,index, value){
 					var json = this.props.json;
-					json[jsonKey][index]=value;
+                    if ( value==null ) {//删除
+                        json[jsonKey].splice(index,1);
+                        console.debug('[Education][handleArrayChange][delete]',jsonKey,index,value,json);
+                    } else {
+                        json[jsonKey][index] = value;
+                    }
 					this.props.onEducationChange(json);
 				},
 
@@ -62,7 +68,7 @@
 											/>
 
 										<StringInput 
-											label={'start date'}
+											label={'开始日期'}
 											jsonKey={'startDate'}  
 											value={json.startDate} 
 											onValueChange={this.handleValueChange}
@@ -70,7 +76,7 @@
 
 
 										<StringInput 
-											label={'end date'}
+											label={'结束日期'}
 											jsonKey={'endDate'}  
 											value={json.endDate} 
 											onValueChange={this.handleValueChange}

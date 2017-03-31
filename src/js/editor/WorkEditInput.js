@@ -4,7 +4,7 @@
 					return {
 						index:0,
 						jsonKey:'workExperiences',
-						json:{},//工作经历的配置
+						json: {},
 						editor:null,//所属的面板组件,用于获取整体配置并更新
 						onDetailChange:function(index,value){},
 						onValueChange:function(jsonKey,value){}
@@ -22,11 +22,12 @@
 
 				render:function(){
 					var self = this;
-					var json = this.props.json;
+					var json = jQuery.extend({}, Work.emptyJSON);//default it is empty,
+					jQuery.extend(json, this.props.json);//merge the config json
 					return (
 						<div>								
-							<div className="block-wrapper">						
-									<StringInput jsonKey="company" editor={this.props.editor} label="公司" value={json.company} 
+							<div className="block-wrapper">
+									<StringInput jsonKey="company" editor={this.props.editor} label="公司" value={json.company}
 										index = {this.props.index}
 										workComponent = {this}
 										onValueChange={this._handleStringInputChange}
@@ -64,3 +65,4 @@
 					)
 				}
 		});
+

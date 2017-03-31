@@ -11,27 +11,35 @@
 					}
 				},
 
-
-
 				handleInputChange:function(index,event){
 					var value = event.target.value;
 					var index = index;
 					var jsonkey = this.props.jsonKey;
 					this.props.onValueChange(jsonkey,index,value);
 				},
+
+				//输入框增加一行
+				handleAddRow: function(event){
+                    this.props.onValueChange(this.props.jsonKey,this.props.values.length,"");
+                },
+
+                handleDeleteRow: function(event){
+                    this.props.onValueChange(this.props.jsonKey,this.props.values.length-1,undefined);
+                },
+
 				render:function(){
 					var self = this;
-					//var prop = this.getProps();
 					var props = this.props;
+					var values = this.props.values; //
 					return (
 						<div className="input-wrapper array-wrapper">								
 								<div className="label">{this.props.label}</div>
 								<div className="array-input">
 								{
-									props.values.map(function(e,i){
+									values.map(function(e,i){
 										return 	(	
 											<div 
-												key={"array_"+self.props.jsonKey+i}>						
+												key={"array_"+self.props.jsonkeyKey+i}>						
 												<input type="text"
 													ref={"arrayBox"+i}
 													index={i}
@@ -43,6 +51,8 @@
 									})
 								}
 								</div>
+								<div className="btn-add" title="点击添加一行" onClick={self.handleAddRow}></div>
+								<div className="btn-delete" title="点击删除一行" onClick={self.handleDeleteRow}></div>
 
 
 						</div>

@@ -22,14 +22,19 @@
 
 				handleDetailsChange:function(jsonKey,index, value){
 					var json = this.props.json;
-					json[jsonKey][index]=value;
+                    if ( value==null ) {//删除
+                        json[jsonKey].splice(index,1);
+                        console.debug('[project][handleDetailsChange][delete]',index,value,json);
+                    }else {
+                        json[jsonKey][index] = value;
+                    }
 					this.props.onProjectChange(json);
 				},
 
 				render:function(){
 						var self =this;
 						var json = this.props.json;
-						return (
+                    return (
 							<div className="block-wrapper">								
 								<div className="input-wrapper">						
 										<StringInput 
@@ -46,7 +51,7 @@
 											/>
 
 										<StringInput 
-											label={'start date'}
+											label={'开始日期'}
 											jsonKey={'startDate'}  
 											value={json.startDate} 
 											onValueChange={this.handleValueChange}
@@ -54,14 +59,14 @@
 
 
 										<StringInput 
-											label={'end date'}
+											label={'结束日期'}
 											jsonKey={'endDate'}  
 											value={json.endDate} 
 											onValueChange={this.handleValueChange}
 											/>																					
 
 										<StringInput 
-											label={'summary'}
+											label={'概述'}
 											jsonKey={'summary'}  
 											value={json.summary} 
 											onValueChange={this.handleValueChange}
@@ -69,7 +74,7 @@
 
 
 										<ArrayInput 
-											label={'details'}
+											label={'详情'}
 											jsonKey={'details'}  
 											values={json.details} 
 											onValueChange={this.handleDetailsChange}
